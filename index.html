@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fendi's Snake Game 🐍</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --board-bg: #161b22;
+      --snake: #3fb950;
+      --snake-head: #2ea043;
+      --food: #f85149;
+      --grid: #21262d;
+      --text: #e6edf3;
+      --accent: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #1f2933 0, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-radius: 1.25rem;
+      background: rgba(10, 12, 16, 0.9);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      max-width: 480px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h1 span {
+      font-size: 1.9rem;
+    }
+
+    .meta {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    .board-wrapper {
+      position: relative;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid #30363d;
+      background: var(--board-bg);
+    }
+
+    canvas {
+      display: block;
+      background: var(--board-bg);
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .score-box {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid #30363d;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .badge span {
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    button {
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: background 0.15s ease, transform 0.05s ease,
+        box-shadow 0.15s ease;
+    }
+
+    button:hover {
+      background: #30363d;
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.4);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.1);
+    }
+
+    .pill {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(63, 185, 80, 0.15);
+      border: 1px solid rgba(63, 185, 80, 0.5);
+      font-size: 0.75rem;
+    }
+
+    .status {
+      margin-top: 0.2rem;
+      font-size: 0.8rem;
+      min-height: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .status span {
+      color: var(--accent);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(0,0,0,0.72), rgba(0,0,0,0.88));
+      color: var(--text);
+      text-align: center;
+      padding: 1rem;
+      gap: 0.7rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay h2 {
+      font-size: 1.4rem;
+    }
+
+    .overlay p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .overlay button {
+      margin-top: 0.3rem;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        margin: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span>🐍</span> Fendi's Snake Game
+    </h1>
+    <div class="meta">
+      Built with <strong>HTML + JavaScript</strong> • Perfect to host on GitHub Pages or any static site
+    </div>
+
+    <div class="board-wrapper">
+      <canvas id="game" width="400" height="400"></canvas>
+
+      <div class="overlay" id="overlay">
+        <h2 id="overlay-title">Snake</h2>
+        <p id="overlay-text">Press <strong>Start</strong> or any arrow key to begin.</p>
+        <button class="btn-primary" id="overlay-btn">Start game</button>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="score-box">
+        <div class="badge">
+          Score: <span id="score">0</span>
+        </div>
+        <div class="badge">
+          Best: <span id="best-score">0</span>
+        </div>
+      </div>
+      <div class="pill">
+        Speed: <span id="speed-label">Normal</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-slow">🐢 Slow</button>
+      <button id="btn-normal" class="btn-primary">⚡ Normal</button>
+      <button id="btn-fast">🔥 Fast</button>
+      <button id="btn-restart">🔄 Restart</button>
+    </div>
+
+    <div class="status" id="status">
+      Controls: Arrow keys / WASD • Don’t hit the walls or yourself.
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const tileCount = 20; // 20x20 grid
+    const tileSize = canvas.width / tileCount;
+
+    // Game state
+    let snake;
+    let food;
+    let dx;
+    let dy;
+    let score;
+    let bestScore = Number(localStorage.getItem("snakeBestScore") || 0);
+    let gameLoop = null;
+    let baseSpeed = 120; // base ms per frame (difficulty)
+    let speed = baseSpeed; // current step interval
+    let level = 1;
+    const POINTS_PER_LEVEL = 5;
+    const SPEED_STEP = 10; // ms faster per level
+    const SPEED_MIN = 50;
+    let running = false;
+
+    // UI elements
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("best-score");
+    const speedLabelEl = document.getElementById("speed-label");
+    const statusEl = document.getElementById("status");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlay-title");
+    const overlayText = document.getElementById("overlay-text");
+    const overlayBtn = document.getElementById("overlay-btn");
+
+    const btnSlow = document.getElementById("btn-slow");
+    const btnNormal = document.getElementById("btn-normal");
+    const btnFast = document.getElementById("btn-fast");
+    const btnRestart = document.getElementById("btn-restart");
+
+    // Cache CSS variable colors once
+    const style = getComputedStyle(document.documentElement);
+    const COLORS = {
+      boardBg: style.getPropertyValue("--board-bg").trim(),
+      grid: style.getPropertyValue("--grid").trim(),
+      food: style.getPropertyValue("--food").trim(),
+      snake: style.getPropertyValue("--snake").trim(),
+      snakeHead: style.getPropertyValue("--snake-head").trim(),
+    };
+
+    let difficultyLabel = "Normal";
+
+    bestScoreEl.textContent = bestScore;
+
+    function resetGame() {
+      snake = [{ x: 10, y: 10 }];
+      dx = 1;
+      dy = 0;
+      score = 0;
+      scoreEl.textContent = score;
+      level = 1;
+      // Recompute speed from base difficulty and level
+      speed = Math.max(SPEED_MIN, baseSpeed - (level - 1) * SPEED_STEP);
+      speedLabelEl.textContent = `${difficultyLabel} • Level ${level}`;
+      placeFood();
+      running = false;
+      updateStatus("Press Start or any arrow key to begin.");
+      showOverlay("Snake", "Press Start or any arrow key to begin.", "Start game");
+      draw();
+    }
+
+    function startGame() {
+      if (running) return;
+      running = true;
+      hideOverlay();
+      updateStatus("Game running… Good luck!");
+      if (gameLoop) clearInterval(gameLoop);
+      gameLoop = setInterval(tick, speed);
+    }
+
+    function gameOver(reason) {
+      running = false;
+      if (gameLoop) clearInterval(gameLoop);
+      updateStatus("Game over: " + reason);
+      overlayTitle.textContent = "Game Over 💀";
+      overlayText.innerHTML =
+        "Score: <strong>" +
+        score +
+        "</strong><br/>Press Restart or Start to try again.";
+      overlayBtn.textContent = "Play again";
+      overlay.classList.add("show");
+    }
+
+    function showOverlay(title, text, btnText) {
+      overlayTitle.textContent = title;
+      overlayText.innerHTML = text;
+      overlayBtn.textContent = btnText;
+      overlay.classList.add("show");
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove("show");
+    }
+
+    function updateStatus(msg) {
+      statusEl.innerHTML = msg;
+    }
+
+    function tick() {
+      // Move snake
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+      // Wall collision
+      if (
+        head.x < 0 ||
+        head.x >= tileCount ||
+        head.y < 0 ||
+        head.y >= tileCount
+      ) {
+        return gameOver("you hit a wall.");
+      }
+
+      // Determine if this move will grow the snake
+      const willGrow = head.x === food.x && head.y === food.y;
+
+      // Self-collision (ignore current tail when not growing)
+      const bodyToCheck = willGrow ? snake : snake.slice(0, -1);
+      if (bodyToCheck.some((seg) => seg.x === head.x && seg.y === head.y)) {
+        return gameOver("you bit yourself.");
+      }
+
+      snake.unshift(head);
+
+      if (willGrow) {
+        // Ate food
+        score++;
+        scoreEl.textContent = score;
+        if (score > bestScore) {
+          bestScore = score;
+          bestScoreEl.textContent = bestScore;
+          localStorage.setItem("snakeBestScore", bestScore);
+        }
+        placeFood();
+
+        // Leveling: every POINTS_PER_LEVEL points, increase level and speed
+        const newLevel = Math.floor(score / POINTS_PER_LEVEL) + 1;
+        if (newLevel !== level) {
+          level = newLevel;
+        }
+        const newSpeed = Math.max(SPEED_MIN, baseSpeed - (level - 1) * SPEED_STEP);
+        if (newSpeed !== speed) {
+          speed = newSpeed;
+          if (running) {
+            clearInterval(gameLoop);
+            gameLoop = setInterval(tick, speed);
+          }
+        }
+        speedLabelEl.textContent = `${difficultyLabel} • Level ${level}`;
+      } else {
+        // Regular move
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function draw() {
+      // Clear board
+      ctx.fillStyle = COLORS.boardBg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw grid
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= tileCount; i++) {
+        const x = i * tileSize + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, 0.5);
+        ctx.lineTo(x, canvas.height - 0.5);
+        ctx.stroke();
+
+        const y = i * tileSize + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0.5, y);
+        ctx.lineTo(canvas.width - 0.5, y);
+        ctx.stroke();
+      }
+
+      // Draw food
+      const foodColor = COLORS.food;
+      ctx.fillStyle = foodColor;
+      ctx.beginPath();
+      ctx.roundRect(
+        food.x * tileSize + 3,
+        food.y * tileSize + 3,
+        tileSize - 6,
+        tileSize - 6,
+        4
+      );
+      ctx.fill();
+
+      // Draw snake
+      const snakeColor = COLORS.snake;
+      const snakeHeadColor = COLORS.snakeHead;
+
+      snake.forEach((seg, index) => {
+        ctx.fillStyle = index === 0 ? snakeHeadColor : snakeColor;
+        ctx.beginPath();
+        ctx.roundRect(
+          seg.x * tileSize + 2,
+          seg.y * tileSize + 2,
+          tileSize - 4,
+          tileSize - 4,
+          index === 0 ? 6 : 4
+        );
+        ctx.fill();
+      });
+    }
+
+    function placeFood() {
+      let newFood;
+      do {
+        newFood = {
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount),
+        };
+      } while (snake.some((s) => s.x === newFood.x && s.y === newFood.y));
+      food = newFood;
+    }
+
+    // Controls
+    function handleDirection(e) {
+      const key = e.key.toLowerCase();
+      const isControl = [
+        "arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"
+      ].includes(key);
+
+      if (isControl) {
+        e.preventDefault();
+      }
+
+      if (!running && isControl) {
+        startGame();
+      }
+
+      if (key === "arrowup" || key === "w") {
+        if (dy === 1) return;
+        dx = 0; dy = -1;
+      } else if (key === "arrowdown" || key === "s") {
+        if (dy === -1) return;
+        dx = 0; dy = 1;
+      } else if (key === "arrowleft" || key === "a") {
+        if (dx === 1) return;
+        dx = -1; dy = 0;
+      } else if (key === "arrowright" || key === "d") {
+        if (dx === -1) return;
+        dx = 1; dy = 0;
+      }
+    }
+
+    document.addEventListener("keydown", handleDirection);
+
+    // Speed buttons
+    function setSpeed(newBaseSpeed, label) {
+      baseSpeed = newBaseSpeed;
+      difficultyLabel = label;
+      // Recompute current speed based on level
+      speed = Math.max(SPEED_MIN, baseSpeed - (level - 1) * SPEED_STEP);
+      speedLabelEl.textContent = `${difficultyLabel} • Level ${level}`;
+      btnSlow.classList.remove("btn-primary");
+      btnNormal.classList.remove("btn-primary");
+      btnFast.classList.remove("btn-primary");
+      if (label === "Slow") btnSlow.classList.add("btn-primary");
+      else if (label === "Normal") btnNormal.classList.add("btn-primary");
+      else if (label === "Fast") btnFast.classList.add("btn-primary");
+
+      if (running) {
+        clearInterval(gameLoop);
+        gameLoop = setInterval(tick, speed);
+      }
+    }
+
+    btnSlow.addEventListener("click", () => setSpeed(180, "Slow"));
+    btnNormal.addEventListener("click", () => setSpeed(120, "Normal"));
+    btnFast.addEventListener("click", () => setSpeed(70, "Fast"));
+
+    btnRestart.addEventListener("click", () => {
+      resetGame();
+    });
+
+    overlayBtn.addEventListener("click", () => {
+      resetGame();
+      startGame();
+    });
+
+    // Polyfill for roundRect if needed
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (
+        x,
+        y,
+        w,
+        h,
+        r
+      ) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
+    // Initial render
+    resetGame();
+  </script>
+</body>
+</html>
