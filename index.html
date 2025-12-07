@@ -293,7 +293,7 @@
     </div>
 
     <div class="status" id="status">
-      Controls: Arrow keys / WASD / touch buttons • Don’t hit the walls or yourself.
+      Controls: Arrow keys / WASD / touch buttons • Space: Pause/Resume • Don’t hit the walls or yourself.
     </div>
   </div>
 
@@ -316,6 +316,7 @@
     const SPEED_STEP = 10; // ms faster after each food
     const SPEED_MIN = 50; // minimum interval
     let running = false;
+    let paused = false;
 
     // UI elements
     const scoreEl = document.getElementById("score");
@@ -345,6 +346,7 @@
       placeFood();
       // Reset speed each new game
       speed = 120;
+      paused = false;
       running = false;
       updateStatus("Press Start, any arrow key, or use the on-screen controls to begin.");
       showOverlay("Snake", "Press Start, any arrow key, or use the on-screen controls to begin.", "Start game");
@@ -354,6 +356,7 @@
     function startGame() {
       if (running) return;
       running = true;
+      paused = false;
       hideOverlay();
       updateStatus("Game running… Good luck!");
       if (gameLoop) clearInterval(gameLoop);
@@ -386,6 +389,20 @@
 
     function updateStatus(msg) {
       statusEl.innerHTML = msg;
+    }
+
+    function pauseGame() {
+      if (!running || paused) return;
+      paused = true;
+      if (gameLoop) clearInterval(gameLoop);
+      updateStatus("Paused — press Space to resume.");
+    }
+
+    function resumeGame() {
+      if (!running || !paused) return;
+      paused = false;
+      gameLoop = setInterval(tick, speed);
+      updateStatus("Game running… Good luck!");
     }
 
     function tick() {
@@ -528,7 +545,23 @@
     function handleDirection(e) {
       const key = e.key.toLowerCase();
 
-      if (!running && ["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"].includes(key)) {
+      // Pause/Resume with Space
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!running) {
+          startGame();
+        } else if (!paused) {
+          pauseGame();
+        } else {
+          resumeGame();
+        }
+        return;
+      }
+
+      const isControl = ["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"].includes(key);
+      if (isControl) e.preventDefault();
+
+      if (!running && isControl) {
         startGame();
       }
 
@@ -546,7 +579,7 @@
     document.addEventListener("keydown", handleDirection);
 
     // Touch / click controls for D-pad
-    dpadButtons.forEach((btn) => {ad
+    dpadButtons.forEach((btn) => {
       const dir = btn.dataset.dir;
 
       const handler = (e) => {
