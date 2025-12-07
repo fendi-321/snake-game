@@ -270,6 +270,7 @@
     const SPEED_STEP = 10; // ms faster per level
     const SPEED_MIN = 50;
     let running = false;
+    let isGameOver = false;
 
     // UI elements
     const scoreEl = document.getElementById("score");
@@ -311,6 +312,7 @@
       speed = Math.max(SPEED_MIN, baseSpeed - (level - 1) * SPEED_STEP);
       speedLabelEl.textContent = `${difficultyLabel} • Level ${level}`;
       placeFood();
+      isGameOver = false;
       running = false;
       updateStatus("Press Start or any arrow key to begin.");
       showOverlay("Snake", "Press Start or any arrow key to begin.", "Start game");
@@ -328,6 +330,7 @@
 
     function gameOver(reason) {
       running = false;
+      isGameOver = true;
       if (gameLoop) clearInterval(gameLoop);
       updateStatus("Game over: " + reason);
       overlayTitle.textContent = "Game Over 💀";
@@ -488,8 +491,12 @@
         e.preventDefault();
       }
 
-      if (!running && isControl) {
-        startGame();
+      if (!running) {
+        if (!isGameOver && isControl) {
+          startGame();
+        } else {
+          return; // do not allow continuing after game over
+        }
       }
 
       if (key === "arrowup" || key === "w") {
