@@ -313,6 +313,8 @@
     let bestScore = Number(localStorage.getItem("snakeBestScore") || 0);
     let gameLoop = null;
     let speed = 120; // ms per frame
+    const SPEED_STEP = 10; // ms faster after each food
+    const SPEED_MIN = 50; // minimum interval
     let running = false;
 
     // UI elements
@@ -341,6 +343,8 @@
       score = 0;
       scoreEl.textContent = score;
       placeFood();
+      // Reset speed each new game
+      speed = 120;
       running = false;
       updateStatus("Press Start, any arrow key, or use the on-screen controls to begin.");
       showOverlay("Snake", "Press Start, any arrow key, or use the on-screen controls to begin.", "Start game");
@@ -415,6 +419,15 @@
           localStorage.setItem("snakeBestScore", bestScore);
         }
         placeFood();
+        // Speed up after each food
+        const newSpeed = Math.max(SPEED_MIN, speed - SPEED_STEP);
+        if (newSpeed !== speed) {
+          speed = newSpeed;
+          if (running) {
+            clearInterval(gameLoop);
+            gameLoop = setInterval(tick, speed);
+          }
+        }
       } else {
         snake.pop();
       }
@@ -533,7 +546,7 @@
     document.addEventListener("keydown", handleDirection);
 
     // Touch / click controls for D-pad
-    dpadButtons.forEach((btn) => {
+    dpadButtons.forEach((btn) => {ad
       const dir = btn.dataset.dir;
 
       const handler = (e) => {
